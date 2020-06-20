@@ -1,32 +1,70 @@
 <template>
-  <div id="app">
-    <div id="nav">
-      <router-link to="/">Home</router-link> |
-      <router-link to="/about">About</router-link>
+    <div id="app">
+      <div v-if="!signedIn">
+         <amplify-authenticator></amplify-authenticator>
+      </div>
+      <div v-if="signedIn">
+        <amplify-sign-out class="signout"></amplify-sign-out>
+        <div class="container">
+          <amplify-photo-picker
+            v-bind:photoPickerConfig="photoPickerConfig"
+          ></amplify-photo-picker>
+          <amplify-s3-album path="videos/"></amplify-s3-album>
+        </div>
+      </div>
     </div>
-    <router-view/>
-  </div>
 </template>
 
+<script>
+import { Storage } from 'aws-amplify'
+import { AmplifyEventBus } from 'aws-amplify-vue'
+import { Auth } from 'aws-amplify'
+const photoPickerConfig = {
+  path: 'videos/',
+}
+export default {
+  name: 'app',
+  async beforeCreate() {
+    try {
+      const user = await Auth.currentAuthenticatedUser()
+      this.signedIn = true
+    } catch (err) {
+      this.signedIn = false
+    }
+    AmplifyEventBus.$on('authState', info => {
+      if (info === 'signedIn') {
+        this.signedIn = true
+      } else {
+        this.signedIn = false
+      }
+    });
+  },
+  data () {
+    return {
+      photoPickerConfig,
+      signedIn: false
+    }
+  }
+}
+</script>
+
 <style>
+body {
+  margin: 0
+}
 #app {
-  font-family: Avenir, Helvetica, Arial, sans-serif;
+  font-family: 'Avenir', Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-align: center;
   color: #2c3e50;
 }
-
-#nav {
-  padding: 30px;
+.container {
+  padding: 40px;
 }
-
-#nav a {
-  font-weight: bold;
-  color: #2c3e50;
-}
-
-#nav a.router-link-exact-active {
-  color: #42b983;
+.signout {
+  background-color: #ededed;
+  margin: 0;
+  padding: 11px 0px 1px;
 }
 </style>
